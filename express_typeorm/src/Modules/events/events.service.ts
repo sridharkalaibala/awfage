@@ -167,6 +167,12 @@ export class EventsService {
     ```
      */
   async getFutureEventWithWorkshops() {
-    throw new Error('TODO task 2');
+    const event = await this.eventRepository
+        .createQueryBuilder("event")
+        .leftJoinAndSelect("event.workshops", "workshop")
+        .leftJoin("event.workshops", "expiredWorkshop", "expiredWorkshop.start < date('now')")
+        .where("expiredWorkshop.id IS NULL")
+        .getMany();
+    return event;
   }
 }
