@@ -1,13 +1,16 @@
-import { Repository } from 'typeorm';
-import { Event } from './entities/event.entity';
+import {Repository} from 'typeorm';
+import {Event} from './entities/event.entity';
 import App from "../../app";
+import { Workshop } from "./entities/workshop.entity";
 
 
 export class EventsService {
   private eventRepository: Repository<Event>;
+  private workshopRepository: Repository<Workshop>;
 
   constructor(app: App) {
     this.eventRepository = app.getDataSource().getRepository(Event);
+    this.workshopRepository = app.getDataSource().getRepository(Workshop);
   }
 
   async getWarmupEvents() {
@@ -167,12 +170,17 @@ export class EventsService {
     ```
      */
   async getFutureEventWithWorkshops() {
-    const event = await this.eventRepository
+    const workshops = await this.workshopRepository
+        .createQueryBuilder('workshop')
+        .select("workshop.eventId")
+        .where("workshop.start > date('now')")
+        .groupBy("workshop.eventId")
+        .orderBy("workshop.id", "ASC");
+
+    return await this.eventRepository
         .createQueryBuilder("event")
         .leftJoinAndSelect("event.workshops", "workshop")
-        .leftJoin("event.workshops", "expiredWorkshop", "expiredWorkshop.start < date('now')")
-        .where("expiredWorkshop.id IS NULL")
+        .where("event.id in (" + workshops.getQuery() + ")")
         .getMany();
-    return event;
   }
 }
