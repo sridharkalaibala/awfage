@@ -95,12 +95,17 @@ export class EventsService {
      */
 
   async getEventsWithWorkshops() {
-    const allEvents = this.eventRepository.find({
+
+    return this.eventRepository.find({
       relations: {
         workshops: true,
       },
-    })
-    return allEvents;
+      order: {
+        workshops: {
+          id: "ASC"
+        },
+      }
+    });
   }
 
   /* TODO: complete getFutureEventWithWorkshops so that it returns events with workshops, that have not yet started
@@ -173,7 +178,7 @@ export class EventsService {
     const workshops = await this.workshopRepository
         .createQueryBuilder('workshop')
         .select("workshop.eventId")
-        .where("workshop.start > date('now')")
+        .having("workshop.start > date('now')")
         .groupBy("workshop.eventId")
         .orderBy("workshop.id", "ASC");
 
